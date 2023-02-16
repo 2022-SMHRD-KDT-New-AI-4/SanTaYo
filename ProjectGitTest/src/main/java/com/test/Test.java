@@ -7,6 +7,7 @@ public class Test {
 		System.out.println("두번째 푸시!");
 		System.out.println("충돌내보자");	
 		System.out.println("평광");
+		System.out.println("우리조 화이팅 ^-^");
 	}
 
 }
