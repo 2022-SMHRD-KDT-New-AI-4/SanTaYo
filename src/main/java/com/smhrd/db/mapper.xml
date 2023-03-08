@@ -3,7 +3,426 @@
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smhrd.db.mapper">
-  <select id="selectBlog" resultType="Blog">
-    select * from Blog where id = #{id}
-  </select>
+
+	<!-- id : dao 호출 시 매칭을 위해 사용하는 id 값(모든 태그에 필수) -->
+	<!-- parameterType : dao에서 넘겨주는 데이터, sql 완성 시 필요한 데이터 -->
+	<!-- resultType(select) : 읽어온 결과를 어떤 타입으로 묶어서 돌려줄것인지 지정 -->
+
+	<!-- 내가 참여한 전체 그룹 정보 불러오기 -->
+	<select id="findJoining" resultType="com.smhrd.model.joiningVO"
+		parameterType="com.smhrd.model.joiningVO">
+		select * from t_joining where user_id=#{user_id} and
+		sche_seq=#{sche_seq}
+	</select>
+
+	<!-- 해당 일정에 참가한 사람들 불러오기 -->
+	<select id="findJoiningmember" resultType="String"
+		parameterType="String">
+		select user_id from t_joining where sche_seq=#{sche_seq}
+	</select>
+
+	<!-- 일정에 참가신청 -->
+	<insert id="addJoining"
+		parameterType="com.smhrd.model.joiningVO">
+		insert into t_joining
+		values(t_joining_SEQ.nextVal,#{sche_seq},#{user_id},sysdate)
+	</insert>
+
+	<!-- 일정에 취소신청 -->
+	<delete id="reMoveJoiningUser"
+		parameterType="com.smhrd.model.joiningVO">
+		delete from t_joining where sche_seq=#{sche_seq} and
+		user_id=#{user_id}
+	</delete>
+
+	<!-- 일정유저네임찾아오기 -->
+	<select id="ScheduleUsernm" resultType="String"
+		parameterType="String">
+		select
+		user_nm from t_user where USER_ID=#{user_id}
+	</select>
+
+	<!-- 일정전체보여주기 -->
+	<select id="select" resultType="com.smhrd.model.scheduleVO"
+		parameterType="String">
+		select sche_seq,sche_sdt,sche_edt,sche_title from
+		t_schedule where
+		group_seq=#{group_seq}
+	</select>
+
+	<!-- 일정상세보여주기 -->
+	<select id="selectUserSchedule"
+		resultType="com.smhrd.model.scheduleVO" parameterType="String">
+		select sche_seq
+		from t_schedule where user_id=#{user_id}
+	</select>
+
+	<!-- 일정추가 -->
+	<insert id="addSchedule"
+		parameterType="com.smhrd.model.scheduleVO">
+		insert into t_schedule
+		values(
+		t_schedule_SEQ.nextVal
+		,#{group_seq}
+		,#{mountain_nm}
+		,#{course}
+		,#{climb_level}
+		,#{sche_sdt}
+		,#{sche_edt}
+		,#{start_time}
+		,#{end_time}
+		,#{sche_title}
+		,#{sche_contents}
+		,#{user_id})
+		<selectKey keyProperty="sche_seq" resultType="String"
+			order="AFTER">
+			SELECT t_schedule_SEQ.currval FROM dual
+		</selectKey>
+	</insert>
+
+	<!-- 그룹시퀀스찾아서 일정에뿌려줄꺼임 -->
+	<select id="findgroup_seq" resultType="String"
+		parameterType="String">
+		select group_seq from t_group where
+		group_name=#{group_nm}
+	</select>
+
+	<!-- 일정클릭해서 보여줄거임 -->
+	<select id="scheduleAll" resultType="com.smhrd.model.scheduleVO"
+		parameterType="String">
+		select * from t_schedule where sche_seq=#{sche_seq}
+	</select>
+
+	<!-- 회원가입 -->
+	<insert id="join" parameterType="com.smhrd.model.MemberVO">
+		insert into t_user (
+		user_id
+		,user_pw
+		,user_nm
+		,user_birthdate
+		,user_gender
+		,user_addr
+		,user_level
+		,user_Joindate
+		)values(
+		#{user_id}
+		,#{user_pw}
+		,#{user_nm}
+		,#{user_birthdate}
+		,#{user_gender}
+		,#{user_addr}
+		,#{user_level}
+		,SYSDATE
+		)
+	</insert>
+
+	<!-- 아이디 중복체크 -->
+	<select id="check" resultType="String" parameterType="String">
+		select
+		user_nm from t_user where USER_ID=#{user_id}
+	</select>
+
+	<!-- 그룹명 중복체크 -->
+	<select id="gcheck" resultType="String"
+		parameterType="String">
+		select group_name from t_group where group_name=#{group_name}
+	</select>
+
+	<!-- 로그인 -->
+	<select id="login" resultType="com.smhrd.model.MemberVO"
+		parameterType="com.smhrd.model.MemberVO">
+		select * from t_user where user_id = #{user_id} and
+		user_pw = #{user_pw}
+	</select>
+
+	<!-- 회원정보수정 -->
+	<update id="update_mem" parameterType="com.smhrd.model.MemberVO">
+		update t_user
+		set
+		user_pw =
+		#{user_pw},
+		user_nm = #{user_nm},
+		user_birthdate = #{user_birthdate},
+		user_gender = #{user_gender},
+		user_addr = #{user_addr},
+		user_level =
+		#{user_level}
+		where user_id = #{user_id}
+	</update>
+
+	<!-- 모임 생성 -->
+	<insert id="groupinsert" parameterType="com.smhrd.model.GroupVO">
+		insert into t_group
+		values
+		(t_group_SEQ.nextVal,#{group_name},#{user_id},#{group_info},sysdate,#{group_level},#{group_age},#{group_gender})
+	</insert>
+
+	<!-- 전체 그룹 정보 불러오기 -->
+	<!-- 읽어온 값이 여러개인 경우에는 기본적으로 List<객체의 타입 < resultType>로 반환 -->
+	<select id="selectAll" resultType="com.smhrd.model.GroupVO">
+		select * from t_group ORDER BY
+		group_dt DESC
+	</select>
+
+	<!-- 해당 그룹 정보 불러오기 -->
+	<select id="group_sel" resultType="com.smhrd.model.GroupVO"
+		parameterType="String">
+		select * from t_group where group_name=#{group_name}
+	</select>
+
+	<!-- 해당 그룹 게시판 불러오기 -->
+	<select id="board_sel_all" resultType="com.smhrd.model.BoardVO"
+		parameterType="String">
+		select * from t_board where group_seq = #{group_seq}
+		ORDER BY board_dt DESC
+	</select>
+
+	<!-- 게시판 글 불러오기 -->
+	<select id="board_con_sel" resultType="com.smhrd.model.BoardVO"
+		parameterType="String">
+		select * from t_board where board_seq = #{board_seq}
+	</select>
+
+	<!-- 모임상세 멤버 -->
+	<select id="groupList" resultType="com.smhrd.model.GroupJoinVO"
+		parameterType="String">
+		select * from t_join where group_id = #{group_seq}
+	</select>
+
+	<!-- 개인정보 가져오기 -->
+	<select id="user_sel" resultType="com.smhrd.model.MemberVO"
+		parameterType="String">
+		select * from t_user where user_id = #{user_id}
+	</select>
+
+	<!-- 게시판 글 작성하기 -->
+	<insert id="boardInsert" parameterType="com.smhrd.model.BoardVO">
+		insert into t_board
+		values
+		(t_board_seq.nextVal,#{group_seq},#{board_title},#{board_content},null,sysdate,#{user_id})
+	</insert>
+
+	<!-- 게시글 수정 -->
+	<update id="boardUpdate" parameterType="com.smhrd.model.BoardVO">
+		update t_board
+		set
+		board_title = #{board_title},
+		board_content = #{board_content},
+		board_dt = sysdate
+		where board_seq = #{board_seq}
+	</update>
+
+	<!-- 내가 만든 전체 그룹 정보 불러오기 -->
+	<!-- 읽어온 값이 여러개인 경우에는 기본적으로 List<객체의 타입 < resultType>로 반환 -->
+	<select id="mymakeselectAll"
+		resultType="com.smhrd.model.GroupVO" parameterType="String">
+		select * from
+		t_group where user_id = #{user_id}
+	</select>
+
+	<!-- 내가 참여한 전체 그룹 정보 불러오기 -->
+	<select id="myjoinselectAll"
+		resultType="com.smhrd.model.GroupVO" parameterType="String">
+		select * from
+		t_group where group_seq in (select group_id from t_join where
+		user_id =
+		#{user_id})
+	</select>
+
+	<!-- 게시판 글 작성하기 -->
+	<insert id="gjoin" parameterType="com.smhrd.model.GroupJoinVO">
+		insert into t_join
+		values
+		(t_join_seq.nextVal,#{user_id},#{group_id},sysdate)
+	</insert>
+
+	<!-- 게시글 삭제 -->
+	<delete id="boardDelete" parameterType="String">
+		delete from t_board where
+		board_seq = #{board_seq}
+	</delete>
+
+	<!-- 게시글에 달린 댓글 다 삭제 -->
+	<delete id="commentAllDelete" parameterType="String">
+		delete from
+		t_comment where board_seq = #{board_seq}
+	</delete>
+
+	<!-- 댓글 입력 -->
+	<insert id="commentInsert"
+		parameterType="com.smhrd.model.CommentVO">
+		insert into t_comment values
+		(t_comment_seq.NextVal,#{board_seq},#{cmt_content},sysdate,#{user_id})
+	</insert>
+
+	<!-- 댓글 가져오기 -->
+	<select id="commentSel" resultType="com.smhrd.model.CommentVO"
+		parameterType="String">
+		select * from t_comment where board_seq = #{board_seq}
+		order by cmt_seq asc
+	</select>
+
+	<!-- 댓글 삭제 -->
+	<delete id="deleteComment" parameterType="String">
+		delete from t_comment
+		where cmt_seq = #{cmt_seq}
+	</delete>
+
+	<!-- 일정 가져오기 -->
+	<select id="sel_sche" resultType="com.smhrd.model.scheduleDTO"
+		parameterType="String">
+		SELECT
+		a.join_seq
+		, a.sche_seq
+		, a.user_id
+		, a.join_dt
+		,
+		b.group_seq
+		, b.mountain_nm
+		, b.course
+		, b.climb_level
+		, b.sche_sdt
+		,
+		b.sche_edt
+		, b.start_time
+		, b.end_time
+		, b.sche_title
+		, b.sche_contents
+		,
+		b.user_id as maden_id
+		FROM
+		t_schedule b
+		INNER JOIN t_joining a ON
+		a.sche_seq =
+		b.sche_seq
+		WHERE a.sche_seq = #{sche_seq}
+	</select>
+
+
+	<!-- 모임 탈퇴 -->
+	<delete id="groupOut" parameterType="String">
+		delete from t_join where
+		user_id = #{user_id} and group_id = #{group_id}
+	</delete>
+
+	<!-- 해당아이디 모임 게시글 다 삭제 -->
+	<!-- 모임 탈퇴 -->
+	<delete id="groupBoardAllDelete"
+		parameterType="com.smhrd.model.GroupVO">
+		delete from
+		t_board where
+		group_seq = #{group_seq} and
+		user_id = #{user_id}
+	</delete>
+
+	<!-- 해당아이디 모임 댓글 다 삭제 -->
+	<!-- 모임 탈퇴 -->
+	<delete id="groupCommentAllDelete"
+		parameterType="com.smhrd.model.GroupVO">
+		delete
+		from t_comment
+		where cmt_seq in(select cmt_seq
+		from
+		t_comment a
+		INNER JOIN
+		t_board b
+		ON a.board_seq = b.board_seq
+		where
+		b.group_seq = #{group_seq}
+		and a.user_id = #{user_id})
+	</delete>
+
+	<!-- 유저 탈퇴 -->
+	<!-- 댓글 삭제 -->
+	<delete id="user_del_com" parameterType="String">
+		delete
+		from t_comment
+		where user_id = #{user_id}
+	</delete>
+
+	<!-- 글 삭제 -->
+	<delete id="user_del_bor" parameterType="String">
+		delete
+		from t_board
+		where
+		user_id = #{user_id}
+	</delete>
+
+	<!-- 그룹 가입 삭제 -->
+	<delete id="user_del_join" parameterType="String">
+		delete
+		from t_join
+		where
+		user_id = #{user_id}
+	</delete>
+
+	<!-- 그룹 삭제 -->
+	<delete id="user_del_group" parameterType="String">
+		delete
+		from t_group
+		where user_id = #{user_id}
+	</delete>
+
+	<!-- 일정가입 삭제 -->
+	<delete id="user_del_joining" parameterType="String">
+		delete
+		from t_joining
+		where user_id = #{user_id}
+	</delete>
+
+	<!-- 일정 삭제 -->
+	<delete id="user_del_sche" parameterType="String">
+		delete
+		from t_schedule
+		where user_id = #{user_id}
+	</delete>
+
+	<!-- 유저 삭제 -->
+	<delete id="user_del_user" parameterType="String">
+		delete
+		from t_user
+		where
+		user_id = #{user_id}
+	</delete>
+
+
+	<!-- 일정 삭제 -->
+	<delete id="scheDelete" parameterType="String">
+		delete from t_schedule
+		where sche_seq = #{sche_seq}
+	</delete>
+
+	<!-- 관리자가 모임수정할 조건 -->
+	<select id="adminSelect" resultType="com.smhrd.model.GroupVO"
+		parameterType="com.smhrd.model.GroupVO">
+		select * from t_group where group_name=#{group_name} and
+		user_id=#{user_id}
+	</select>
+	<!-- /////////////////////////// -->
+	<!-- 모임 수정 -->
+	<update id="groupUpdate" parameterType="com.smhrd.model.GroupVO">
+		update t_group
+		set
+		group_info=#{group_info}, group_level=#{group_level},
+		group_age=#{group_age}, group_gender=#{group_gender}
+		where
+		group_name=#{group_name}
+	</update>
+
+	<!-- 내일정 -->
+	<select id="mySche" resultType="com.smhrd.model.scheduleVO"
+		parameterType="String">
+		SELECT *
+		from t_schedule
+		where sche_seq in(select sche_seq from t_joining where user_id =#{user_id})
+	</select>
+	
+		<!-- 그루비룸 가져오기 -->
+	<select id="group__sel" resultType="String"
+		parameterType="String">
+		SELECT group_name
+		from t_group
+		where group_seq =
+		#{group_seq}
+	</select>
 </mapper>
